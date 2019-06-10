@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         btLoad.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               String imagePath =  Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + "/img_test.png";
+               String imagePath =  Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + "/img_test.jpg";
                Log.d(TAG,"filepath : " + imagePath);
                 File imageFile = new File(imagePath);
                 if(imageFile.exists()){

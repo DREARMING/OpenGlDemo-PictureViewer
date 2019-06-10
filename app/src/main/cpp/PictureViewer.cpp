@@ -96,19 +96,21 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved){
 
 
 void PictureViewer::showPicture(char *imageUrl) {
-    int width,height;
-    byte* imageData = SOIL_load_image(imageUrl, &width, &height, 0, SOIL_LOAD_RGB);
-    LOGI("width : %d, height: %d ", width, height);
+    int width,height,channel;
+    byte* imageData = stbi_load(imageUrl, &width, &height, &channel, 0);//SOIL_load_image(imageUrl, &width, &height, 0, SOIL_LOAD_RGB);
+    LOGI("width : %d, height: %d ,channel : %d", width, height, channel);
     if(renderer != NULL && renderTexSurface != NULL){
         eglCore->makeCurrent(renderTexSurface);
         GLuint textureId = createTexture(imageData, width, height);
-        SOIL_free_image_data(imageData);
+
         renderer->renderToViewWithAutoFill(textureId, screenWidth, screenHeight, width, height);
         if (!eglCore->swapBuffers(renderTexSurface)) {
             LOGE("eglSwapBuffers(renderTexSurface) returned error %d", eglGetError());
         }
         eglCore->doneCurrent();
     }
+    //SOIL_free_image_data(imageData);
+    stbi_image_free(imageData);
 }
 
 GLuint PictureViewer::createTexture(byte* data, int width, int height){

@@ -13,6 +13,7 @@
 #include "egl_share_context.h"
 #include "video_gl_surface_render.h"
 #include "SOIL.h"
+#include "stb_image.h"
 
 class PictureViewer {
 private:
