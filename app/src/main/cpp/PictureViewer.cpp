@@ -49,13 +49,30 @@ JNIEXPORT void showPicture(JNIEnv* env, jobject obj, jlong context, jstring imag
     }
 }
 
+JNIEXPORT void showWaterPicture(JNIEnv* env, jobject obj, jlong context, jstring imagePath, jbyteArray waterData,jint width, jint height){
+    LOGI("show water Picture");
+    if(context != -1){
+        PictureViewer* viewer = reinterpret_cast<PictureViewer *>(context);
+        if(viewer != NULL){
+            char* url = const_cast<char *>(env->GetStringUTFChars(imagePath, NULL));
+            jbyte * data = env->GetByteArrayElements(waterData, NULL);
+            int len = env->GetArrayLength(waterData);
+            LOGI("water data len : %d, width : %d, height : %d", len, width, height);
+            viewer->showWaterPicture(url, reinterpret_cast<byte *>(data), width, height);
+            env->ReleaseStringUTFChars(imagePath, url);
+            env->ReleaseByteArrayElements(waterData, data, 0);
+        }
+    }
+}
+
 
 
 static JNINativeMethod getMethods[] = {
         {"onSurfaceCreate","(JLandroid/view/Surface;II)V",(void*)onSurfaceCreate},
         {"onSurfaceDestroy","(J)V",(void*)onSurfaceDestroy},
         {"nativeSetup","()J",(void*)nativeSetup},
-        {"showPicture","(JLjava/lang/String;)V",(void*)showPicture}
+        {"showPicture","(JLjava/lang/String;)V",(void*)showPicture},
+        {"showWaterPicture","(JLjava/lang/String;[BII)V",(void*)showWaterPicture}
 };
 
 //此函数通过调用RegisterNatives方法来注册我们的函数
@@ -97,7 +114,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved){
 
 void PictureViewer::showPicture(char *imageUrl) {
     int width,height,channel;
-    byte* imageData = stbi_load(imageUrl, &width, &height, &channel, 0);//SOIL_load_image(imageUrl, &width, &height, 0, SOIL_LOAD_RGB);
+    byte* imageData = SOIL_load_image(imageUrl, &width, &height, &channel, SOIL_LOAD_RGB);//stbi_load(imageUrl, &width, &height, &channel, 0);
     LOGI("width : %d, height: %d ,channel : %d", width, height, channel);
     if(renderer != NULL && renderTexSurface != NULL){
         eglCore->makeCurrent(renderTexSurface);
@@ -109,8 +126,8 @@ void PictureViewer::showPicture(char *imageUrl) {
         }
         eglCore->doneCurrent();
     }
-    //SOIL_free_image_data(imageData);
-    stbi_image_free(imageData);
+    SOIL_free_image_data(imageData);
+    //stbi_image_free(imageData);
 }
 
 GLuint PictureViewer::createTexture(byte* data, int width, int height){
@@ -176,6 +193,16 @@ void PictureViewer::createWindowSurface(ANativeWindow *window) {
            // surfaceExists = true;
             //forceGetFrame = true;
         }
+        // must after makeCurrent
+        waterRender = new VideoGLWaterSurfaceRender();
+        bool isGLViewInitialized1 = waterRender->init(screenWidth, screenHeight);// there must be right：1080, 810 for 4:3
+        if (!isGLViewInitialized1) {
+            LOGI("GL View failed on initialized...");
+        } else {
+            // surfaceExists = true;
+            //forceGetFrame = true;
+        }
+
         eglCore->doneCurrent();    // must do this before share context in Huawei p6, or will crash
     }
     LOGI("Leave VideoOutput::createWindowSurface");
@@ -199,6 +226,11 @@ void PictureViewer::onSurfaceDestroy() {
             delete renderer;
             renderer = NULL;
         }
+        if(waterRender){
+            waterRender->dealloc();
+            delete  waterRender;
+            waterRender = NULL;
+        }
 
         if (eglCore){
             eglCore->releaseSurface(renderTexSurface);
@@ -211,4 +243,24 @@ void PictureViewer::onSurfaceDestroy() {
             surfaceWindow = NULL;
         }
     }
+}
+
+void PictureViewer::showWaterPicture(char *imageUrl, byte *waterData, int waterWidth, int waterHeight) {
+    int width,height,channel;
+    byte* imageData = SOIL_load_image(imageUrl, &width, &height, &channel, SOIL_LOAD_RGB); //stbi_load(imageUrl, &width, &height, &channel, 0);
+    LOGI("width : %d, height: %d ,channel : %d", width, height, channel);
+    if(waterRender != NULL && renderTexSurface != NULL){
+        LOGI("screenWidth : %d, screenHeight:%d ", screenWidth, screenHeight);
+        eglCore->makeCurrent(renderTexSurface);
+        GLuint textureId = createTexture(imageData, width, height);
+        GLuint waterTexId = createTexture(waterData, waterWidth, waterHeight);
+        //waterRender->renderToViewWithAutoFill(textureId,waterTexId, screenWidth,screenHeight,waterWidth,waterHeight);
+        waterRender->renderToViewWithAutoFill(textureId, waterTexId,screenWidth, screenHeight, width, height);
+        if (!eglCore->swapBuffers(renderTexSurface)) {
+            LOGE("eglSwapBuffers(renderTexSurface) returned error %d", eglGetError());
+        }
+        eglCore->doneCurrent();
+    }
+    SOIL_free_image_data(imageData);
+    //stbi_image_free(imageData);
 }

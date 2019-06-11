@@ -1,6 +1,11 @@
 package com.mvcoder.opengldemo;
 
 import android.Manifest;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -12,6 +17,7 @@ import android.view.View;
 import android.widget.Button;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import pub.devrel.easypermissions.EasyPermissions;
@@ -26,6 +32,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private Button btLoad;
+    private Button btWater;
     private SurfaceView surfaceView;
 
 
@@ -67,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
         btLoad.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-               String imagePath =  Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + "/img_test.jpg";
+               String imagePath =  Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + "/img_test.png";
                Log.d(TAG,"filepath : " + imagePath);
                 File imageFile = new File(imagePath);
                 if(imageFile.exists()){
@@ -79,6 +86,53 @@ public class MainActivity extends AppCompatActivity implements EasyPermissions.P
                 }else{
                     Log.d(TAG, "image file not exist");
                 }
+            }
+        });
+
+
+        btWater = findViewById(R.id.btWaterMap);
+        btWater.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //创建一张文字图片
+                int width = surfaceView.getWidth();
+                int height = surfaceView.getHeight();
+                Bitmap fontBitmap = Bitmap.createBitmap(width,height, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(fontBitmap);
+                //抗锯齿
+                Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                //颜色
+                paint.setColor(Color.YELLOW);
+                paint.setTextSize(16);
+                // text shadow
+                paint.setShadowLayer(1f, 0f, 1f, Color.WHITE);
+
+                String gText = "mvcoder";
+                // draw text to the Canvas center
+                Rect bounds = new Rect();
+                //	    paint.setTextAlign(Align.CENTER);
+
+                paint.getTextBounds(gText, 0, gText.length(), bounds);
+                int x = (fontBitmap.getWidth() - bounds.width())/2;
+                int y = (fontBitmap.getHeight() + bounds.height())/2;
+
+                canvas.drawText(gText,x,y,paint);
+
+                int capacity = width * height * 4;
+                ByteBuffer byteBuffer = ByteBuffer.allocate(capacity);
+                fontBitmap.copyPixelsToBuffer(byteBuffer);
+                byteBuffer.position(0);
+
+                byte[] buffer = new byte[capacity];
+                byteBuffer.get(buffer,0, capacity);
+                //取背景图
+                String imagePath =  Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath() + "/img_test.png";
+                //文字所在的位置、宽高
+
+                if(picViewer!= null){
+                    picViewer.showWaterPicture(imagePath, buffer, width, height);
+                }
+
             }
         });
     }

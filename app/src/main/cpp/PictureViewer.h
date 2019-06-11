@@ -12,14 +12,16 @@
 #include "egl_core.h"
 #include "egl_share_context.h"
 #include "video_gl_surface_render.h"
+#include "video_gl_water_surface_render.h"
 #include "SOIL.h"
-#include "stb_image.h"
+//#include "stb_image.h"
 
 class PictureViewer {
 private:
     EGLCore* eglCore;
     EGLSurface renderTexSurface;
     VideoGLSurfaceRender* renderer;
+    VideoGLWaterSurfaceRender* waterRender;
     ANativeWindow* surfaceWindow;
     int screenWidth;
     int screenHeight;
@@ -32,6 +34,7 @@ public:
     void onSurfaceCreate(ANativeWindow* nativeWindow, int width, int height);
     void onSurfaceDestroy();
     void showPicture(char* imageUrl);
+    void showWaterPicture(char* imageUrl, byte* waterData, int width, int height);
 
 };
 

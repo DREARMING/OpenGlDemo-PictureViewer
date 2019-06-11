@@ -29,6 +29,12 @@ public class PicViewer {
         }
     }
 
+    public void showWaterPicture(String imagePath, byte[] data, int width, int height){
+        if(nativeContext!= -1L){
+            showWaterPicture(nativeContext, imagePath, data, width, height);
+        }
+    }
+
     private native long nativeSetup();
 
     private native void showPicture(long nativeContext, String imagePath);
@@ -36,6 +42,8 @@ public class PicViewer {
     private native void onSurfaceCreate(long nativeContext, Surface surface, int width, int height);
 
     private native void onSurfaceDestroy(long nativeContext);
+
+    private native void showWaterPicture(long nativeContext, String imagePath, byte[] data, int width, int height);
 
 
 }
